@@ -12,26 +12,23 @@ import os
 from dotenv import load_dotenv
 
 # Try to import Google Generative AI SDK. If it's not installed we fall back to
-# an offline/mock mode so the backend can still run locally for UI testing.
+
 try:
     import google.generativeai as genai
 except Exception:
     genai = None
 
-# Load environment variables
+
 load_dotenv()
 
-# ============================================================================
+
 # GEMINI API CONFIGURATION (optional)
-# If the google.generativeai package or API key is missing we'll continue in
-# offline mode and return simple fallback responses so the server can run.
-# ============================================================================
+
 model = None
 HAS_GENAI = False
 if genai is not None:
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GEMINI_API')
-    # If an API key is provided, try to configure the SDK. If configuration
-    # or model init fails, continue without it.
+   
     if GEMINI_API_KEY:
         try:
             genai.configure(api_key=GEMINI_API_KEY)
@@ -55,9 +52,9 @@ if genai is not None:
 else:
     print('Warning: google.generativeai package not available; running in offline/mock mode')
 
-# ============================================================================
+
 # FASTAPI SETUP
-# ============================================================================
+
 app = FastAPI(title="EduTech Multi-Agent Platform")
 
 # CORS middleware
@@ -69,9 +66,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============================================================================
+
 # REQUEST/RESPONSE MODELS
-# ============================================================================
+
 class QueryRequest(BaseModel):
     query: str
     user_id: Optional[str] = "default_user"
@@ -81,9 +78,9 @@ class AgentResponse(BaseModel):
     response: str
     status: str
 
-# ============================================================================
+
 # AGENT SYSTEM PROMPTS
-# ============================================================================
+
 
 MAIN_AGENT_PROMPT = """You are the Main Routing Agent for EduTech platform. 
 Your ONLY job is to analyze the user's query and return ONE WORD - the name of the best subagent to handle it.
@@ -169,9 +166,9 @@ Provide:
 Keep response under 200 words:"""
 }
 
-# ============================================================================
+
 # AGENT CLASSES
-# ============================================================================
+
 
 class LlmAgent:
     """Base Agent class"""
@@ -184,7 +181,7 @@ class LlmAgent:
     def generate_response(self, user_query: str) -> str:
         """Generate response using Gemini API"""
         # If the Gemini model is available use it, otherwise return a simple
-        # offline-friendly fallback so the server stays usable for testing.
+        
         if self.model is not None and HAS_GENAI:
             try:
                 full_prompt = self.system_prompt.format(query=user_query)
@@ -193,7 +190,7 @@ class LlmAgent:
             except Exception as e:
                 return f"I apologize, but I encountered an error: {str(e)}"
 
-        # Simple deterministic fallback (short, safe) when no LLM is present.
+        
         # Keep responses concise so the frontend shows something meaningful.
         fallback = f"(OFFLINE MODE) {self.name}: "
         # Show a short echo/explain depending on agent type
@@ -386,4 +383,5 @@ if __name__ == "__main__":
     print(f"API Documentation: http://{host}:{port}/docs")
     print("Frontend: Open 'index.html' file in your browser")
     print("="*70 + "\n")
+
     uvicorn.run(app, host=host, port=port, log_level="info")
